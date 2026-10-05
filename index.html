@@ -27,35 +27,16 @@
 </head>
 <body class="text-gray-800 antialiased min-h-screen flex flex-col">
 
-    <!-- Header (Login/Logout) -->
+    <!-- Header -->
     <header class="bg-blue-600 text-white shadow-md py-4 px-6 flex justify-between items-center">
         <h1 class="text-xl font-bold tracking-tight">学校備品管理</h1>
-        <div id="user-info" class="hidden flex items-center space-x-4">
-            <span id="user-email" class="text-sm font-medium"></span>
-            <button id="logout-btn" class="bg-blue-700 hover:bg-blue-800 text-white text-sm py-2 px-4 rounded transition duration-150">ログアウト</button>
-        </div>
     </header>
 
     <!-- Main Content Area -->
     <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl">
         
-        <!-- Login View (Shown when not authenticated) -->
-        <div id="login-view" class="flex flex-col items-center justify-center h-[60vh]">
-            <div class="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full">
-                <svg class="mx-auto h-16 w-16 text-blue-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <h2 class="text-2xl font-bold mb-2">ログインが必要です</h2>
-                <p class="text-gray-600 mb-6">備品の貸出・返却を記録するには、Googleアカウントでログインしてください。</p>
-                <button id="login-btn" class="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 px-4 rounded flex items-center justify-center space-x-2 transition duration-150 shadow-sm">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
-                    <span>Googleでログイン</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- App View (Shown when authenticated) -->
-        <div id="app-view" class="hidden">
+        <!-- App View -->
+        <div id="app-view">
             <!-- Alert Message Container -->
             <div id="alert-container" class="mb-4"></div>
 
@@ -130,18 +111,6 @@
         </div>
     </main>
 
-    <!-- Custom Modal for Delete Confirmation -->
-    <div id="delete-modal" class="modal items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4 transform transition-all">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">本当に削除しますか？</h3>
-            <p class="text-sm text-gray-500 mb-6">この操作は取り消せません。</p>
-            <div class="flex justify-end space-x-3">
-                <button id="cancel-delete" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded font-medium">キャンセル</button>
-                <button id="confirm-delete" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium">削除する</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Firebase SDKs & App Logic -->
     <script type="module">
         // ---------------------------------------------------------
@@ -149,21 +118,11 @@
         // ---------------------------------------------------------
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
-            getAuth, 
-            signInWithPopup, 
-            GoogleAuthProvider,
-            onAuthStateChanged,
-            signOut,
-            signInWithCustomToken,
-            signInAnonymously
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
             getFirestore, 
             collection, 
             addDoc, 
             onSnapshot, 
             query, 
-            orderBy, 
             doc, 
             updateDoc,
             deleteDoc,
@@ -172,25 +131,26 @@
 
         // ---------------------------------------------------------
         // 2. Firebase設定
-        // ご提示いただいた設定値に置き換えました
+        // ※ 実際のホスティング環境では、環境変数やFirebase Hostingの自動設定から取得します。
+        // ここでは、Artifacts環境用の設定を使用します。
         // ---------------------------------------------------------
-        const userFirebaseConfig = {
-            apiKey: "AIzaSyB7FuK2MA3Kzq6nw3S8K7JWiZRhDhynCZU",
-            authDomain: "tuisi-a669d.firebaseapp.com",
-            projectId: "tuisi-a669d",
-            storageBucket: "tuisi-a669d.firebasestorage.app",
-            messagingSenderId: "813306878156",
-            appId: "1:813306878156:web:3c2099a5b68fc8120d0a69"
-        };
-
-        let firebaseConfig = userFirebaseConfig;
+        let firebaseConfig = {};
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-equipment-app';
 
         try {
-            // 右側のプレビュー環境(Artifacts)用の特別処理
-            // （本番デプロイ時は無視され、ご自身のFirebaseに繋がります）
             if (typeof __firebase_config !== 'undefined') {
                 firebaseConfig = JSON.parse(__firebase_config);
+            } else {
+                // ダミー設定 (プレビュー環境用)
+                console.warn("Using placeholder Firebase config. Real database requires setup.");
+                firebaseConfig = {
+                    apiKey: "demo-key",
+                    authDomain: "demo.firebaseapp.com",
+                    projectId: "demo-project",
+                    storageBucket: "demo.appspot.com",
+                    messagingSenderId: "123456789",
+                    appId: "1:123456789:web:abcdef"
+                };
             }
         } catch (e) {
             console.error("Error parsing firebase config:", e);
@@ -198,23 +158,11 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
 
         // ---------------------------------------------------------
         // 3. UI Element References
         // ---------------------------------------------------------
-        // Views
-        const loginView = document.getElementById('login-view');
-        const appView = document.getElementById('app-view');
-        
-        // Header Auth info
-        const userInfo = document.getElementById('user-info');
-        const userEmail = document.getElementById('user-email');
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        
         // Form Elements
         const rentalForm = document.getElementById('rental-form');
         const itemNameInput = document.getElementById('item-name');
@@ -228,23 +176,18 @@
         const recordsBody = document.getElementById('records-body');
         const recordCount = document.getElementById('record-count');
         
-        // Alert & Modal
+        // Alert
         const alertContainer = document.getElementById('alert-container');
-        const deleteModal = document.getElementById('delete-modal');
-        const cancelDeleteBtn = document.getElementById('cancel-delete');
-        const confirmDeleteBtn = document.getElementById('confirm-delete');
 
         // State
-        let currentUser = null;
         let unsubscribeSnapshot = null;
-        let itemToDelete = null;
 
         // 今日の日付を貸出日のデフォルト値に設定
         const today = new Date().toISOString().split('T')[0];
         borrowDateInput.value = today;
 
         // ---------------------------------------------------------
-        // 4. Authentication Logic
+        // 4. 初期化 & アラート
         // ---------------------------------------------------------
 
         // カスタムUIアラート関数（alert()の代わり）
@@ -261,91 +204,12 @@
             }, 5000);
         }
 
-        // Login Helper
-        async function handleLogin() {
-            try {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<span class="animate-spin mr-2">↻</span> ログイン中...';
-                
-                // Note: Artifacts環境では popup はブロックされる場合があるため、
-                // 実際のアプリ (Firebase Hosting上) では signInWithPopup を使用します。
-                // ここではデモ環境用のフォールバックも用意します。
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // Try real Google Auth, fallback to anonymous if blocked (in preview)
-                    try {
-                        await signInWithPopup(auth, provider);
-                    } catch (e) {
-                         console.log("Popup failed, trying anonymous auth for preview", e);
-                         await signInAnonymously(auth);
-                    }
-                }
-            } catch (error) {
-                console.error("Login Error:", error);
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5"><span>Googleでログイン</span>`;
-                // エラー表示
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'mt-4 text-red-500 text-sm';
-                errorDiv.innerText = 'ログインに失敗しました。';
-                loginBtn.parentNode.appendChild(errorDiv);
-            }
-        }
-
-        // Logout Helper
-        async function handleLogout() {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Logout Error:", error);
-            }
-        }
-
-        // Auth State Observer
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                // Logged in
-                loginView.classList.add('hidden');
-                appView.classList.remove('hidden');
-                userInfo.classList.remove('hidden');
-                
-                // 表示名またはメールアドレスを表示（匿名ログインの場合は "ゲスト"）
-                const displayName = user.displayName || user.email || "ゲストユーザー";
-                userEmail.textContent = displayName;
-
-                // Load Data
-                setupDataListener();
-            } else {
-                // Logged out
-                loginView.classList.remove('hidden');
-                appView.classList.add('hidden');
-                userInfo.classList.add('hidden');
-                
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5"><span>Googleでログイン</span>`;
-
-                // Clean up listener
-                if (unsubscribeSnapshot) {
-                    unsubscribeSnapshot();
-                }
-                recordsBody.innerHTML = '';
-            }
-        });
-
-        // Attach Auth Event Listeners
-        loginBtn.addEventListener('click', handleLogin);
-        logoutBtn.addEventListener('click', handleLogout);
-
         // ---------------------------------------------------------
         // 5. Database Logic (Firestore)
         // ---------------------------------------------------------
 
         // コレクションパスの取得
-        // 全員で共有するデータの場合は public/data/... を使用します
         function getCollectionRef() {
-            if (!currentUser) return null;
             // RULE 1: Strict Paths - artifacts/{appId}/public/data/{collectionName}
             return collection(db, 'artifacts', appId, 'public', 'data', 'rentals');
         }
@@ -353,11 +217,6 @@
         // Create - データの追加
         rentalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            if (!currentUser) {
-                showAlert('エラー: ログインしていません。', 'error');
-                return;
-            }
 
             const colRef = getCollectionRef();
             if (!colRef) return;
@@ -374,8 +233,8 @@
                     returnDate: returnDateInput.value,
                     status: statusSelect.value,
                     createdAt: serverTimestamp(),
-                    createdBy: currentUser.uid, // 誰が登録したかを記録
-                    creatorName: currentUser.displayName || currentUser.email || 'ゲスト'
+                    createdBy: 'anonymous', 
+                    creatorName: 'ゲスト'
                 };
 
                 await addDoc(colRef, newData);
@@ -398,8 +257,6 @@
 
         // Read - データのリアルタイム監視
         function setupDataListener() {
-            if (!currentUser) return;
-
             const colRef = getCollectionRef();
             if (!colRef) return;
 
@@ -483,7 +340,7 @@
                                 ? `<button onclick="updateStatus('${rental.id}', '返却済')" class="text-xs bg-green-500 hover:bg-green-600 text-white py-1 px-2 rounded transition">返却する</button>` 
                                 : `<button onclick="updateStatus('${rental.id}', '貸出中')" class="text-xs bg-gray-400 hover:bg-gray-500 text-white py-1 px-2 rounded transition">取消</button>`
                             }
-                            <button onclick="requestDelete('${rental.id}')" class="text-xs bg-red-100 hover:bg-red-200 text-red-700 py-1 px-2 rounded transition">削除</button>
+                            <button onclick="deleteRental('${rental.id}')" class="text-xs bg-red-100 hover:bg-red-200 text-red-700 py-1 px-2 rounded transition">削除</button>
                         </div>
                     </td>
                 `;
@@ -493,7 +350,6 @@
 
         // Update - 状況の更新 (Globalスコープに公開)
         window.updateStatus = async (docId, newStatus) => {
-            if (!currentUser) return;
             try {
                 // RULE 1: Strict Paths
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rentals', docId);
@@ -507,33 +363,21 @@
             }
         };
 
-        // Delete - 削除のフロー (確認モーダル)
-        window.requestDelete = (docId) => {
-            itemToDelete = docId;
-            deleteModal.style.display = 'flex';
-        };
-
-        cancelDeleteBtn.addEventListener('click', () => {
-            itemToDelete = null;
-            deleteModal.style.display = 'none';
-        });
-
-        confirmDeleteBtn.addEventListener('click', async () => {
-            if (!currentUser || !itemToDelete) return;
-            
+        // Delete - 削除処理 (即時)
+        window.deleteRental = async (docId) => {
             try {
                 // RULE 1: Strict Paths
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rentals', itemToDelete);
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'rentals', docId);
                 await deleteDoc(docRef);
                 showAlert('削除しました。');
             } catch (error) {
                 console.error("Error deleting document:", error);
                 showAlert('削除に失敗しました。', 'error');
-            } finally {
-                itemToDelete = null;
-                deleteModal.style.display = 'none';
             }
-        });
+        };
+
+        // ページ読み込み時にデータ取得を開始
+        setupDataListener();
 
         // ユーティリティ: XSS対策
         function escapeHtml(unsafe) {
