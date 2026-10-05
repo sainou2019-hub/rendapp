@@ -172,26 +172,25 @@
 
         // ---------------------------------------------------------
         // 2. Firebase設定
-        // ※ 実際のホスティング環境では、環境変数やFirebase Hostingの自動設定から取得します。
-        // ここでは、Artifacts環境用の設定を使用します。
+        // ご提示いただいた設定値に置き換えました
         // ---------------------------------------------------------
-        let firebaseConfig = {};
+        const userFirebaseConfig = {
+            apiKey: "AIzaSyB7FuK2MA3Kzq6nw3S8K7JWiZRhDhynCZU",
+            authDomain: "tuisi-a669d.firebaseapp.com",
+            projectId: "tuisi-a669d",
+            storageBucket: "tuisi-a669d.firebasestorage.app",
+            messagingSenderId: "813306878156",
+            appId: "1:813306878156:web:3c2099a5b68fc8120d0a69"
+        };
+
+        let firebaseConfig = userFirebaseConfig;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-equipment-app';
 
         try {
+            // 右側のプレビュー環境(Artifacts)用の特別処理
+            // （本番デプロイ時は無視され、ご自身のFirebaseに繋がります）
             if (typeof __firebase_config !== 'undefined') {
                 firebaseConfig = JSON.parse(__firebase_config);
-            } else {
-                // ダミー設定 (プレビュー環境用)
-                console.warn("Using placeholder Firebase config. Real database requires setup.");
-                firebaseConfig = {
-                    apiKey: "demo-key",
-                    authDomain: "demo.firebaseapp.com",
-                    projectId: "demo-project",
-                    storageBucket: "demo.appspot.com",
-                    messagingSenderId: "123456789",
-                    appId: "1:123456789:web:abcdef"
-                };
             }
         } catch (e) {
             console.error("Error parsing firebase config:", e);
